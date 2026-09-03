@@ -1,0 +1,3 @@
+# Spotify analyzer uses only Python standard library
+# No external dependencies required
+# Python 3.9+
