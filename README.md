@@ -11,7 +11,7 @@ Analyze your Spotify listening history from your exported data.
    - Extract it locally
 
 2. **Prepare the data folder:**
-   - Find the folder containing `StreamingHistory_*.json` files
+   - Find the folder containing `Streaming_History_Audio_*.json` files
    - Note the path (e.g., `/Users/joaquim/Downloads/MySpotifyData`)
 
 ## Running
