@@ -1,0 +1,34 @@
+[
+  {
+    "ts": "2023-06-15T10:30:00Z",
+    "master_metadata_track_name": "Blinding Lights",
+    "master_metadata_album_artist_name": "The Weeknd",
+    "master_metadata_album_album_name": "After Hours",
+    "ms_played": 180000,
+    "spotify_track_uri": "spotify:track:123"
+  },
+  {
+    "ts": "2023-06-15T11:00:00Z",
+    "master_metadata_track_name": "505",
+    "master_metadata_album_artist_name": "Arctic Monkeys",
+    "master_metadata_album_album_name": "AM",
+    "ms_played": 258000,
+    "spotify_track_uri": "spotify:track:124"
+  },
+  {
+    "ts": "2023-06-15T12:00:00Z",
+    "master_metadata_track_name": null,
+    "master_metadata_album_artist_name": "Some Podcast",
+    "master_metadata_album_album_name": "Episode 1",
+    "ms_played": 3600000,
+    "spotify_track_uri": "spotify:episode:999"
+  },
+  {
+    "ts": "2023-06-15T13:00:00Z",
+    "master_metadata_track_name": "Short Song",
+    "master_metadata_album_artist_name": "Artist",
+    "master_metadata_album_album_name": "Album",
+    "ms_played": 5000,
+    "spotify_track_uri": "spotify:track:125"
+  }
+]

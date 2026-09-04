@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 
 import sys
-from loader import load_all_streams
-from analyzer import StreamAnalyzer
-from ui import SpotifyAnalyzerUI
+from src.loader import load_all_streams
+from src.analyzer import StreamAnalyzer
+from src.ui import SpotifyAnalyzerUI
 
 
 def main():

@@ -1,7 +1,7 @@
 import json
 from pathlib import Path
 from datetime import datetime
-from models import Stream
+from src.models import Stream
 
 
 def load_all_streams(data_folder: str) -> list[Stream]:

@@ -1,4 +1,4 @@
-from analyzer import StreamAnalyzer
+from src.analyzer import StreamAnalyzer
 import calendar
 
 

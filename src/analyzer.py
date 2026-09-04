@@ -1,5 +1,5 @@
 from collections import defaultdict
-from models import Stream, ArtistStats, TrackStats, AlbumStats
+from src.models import Stream, ArtistStats, TrackStats, AlbumStats
 
 
 class StreamAnalyzer:
