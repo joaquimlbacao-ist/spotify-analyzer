@@ -1,22 +1,28 @@
 import { useState, useEffect } from 'react';
+import { useDebounce } from './useDebounce';
+import SearchBar from './SearchBar';
+import Table from './Table';
 
 export default function ArtistsPage() {
   const [artists, setArtists] = useState([]);
-  const [year, setYear] = useState('');
-  const [month, setMonth] = useState('');
-  const [limit, setLimit] = useState(10);
+  const [filters, setFilters] = useState({
+    year: '',
+    month: '',
+    limit: 10
+  });
   const [loading, setLoading] = useState(false);
+  const debouncedFilters = useDebounce(filters, 500);
 
   useEffect(() => {
     fetchArtists();
-  }, []);
+  }, [debouncedFilters]);
 
   const fetchArtists = async () => {
     setLoading(true);
     const params = new URLSearchParams();
-    params.append('limit', limit);
-    if (year) params.append('year', year);
-    if (month) params.append('month', month);
+    params.append('limit', filters.limit);
+    if (filters.year) params.append('year', filters.year);
+    if (filters.month) params.append('month', filters.month);
 
     const response = await fetch(`http://localhost:8000/api/artists?${params}`);
     const data = await response.json();
@@ -26,50 +32,17 @@ export default function ArtistsPage() {
 
   return (
     <div>
-      <h1>Top Artists</h1>
+      <h1 className="text-3xl font-bold text-white mb-6">Top Artists</h1>
       
-      <div>
-        <input
-          type="number"
-          placeholder="Year"
-          value={year}
-          onChange={(e) => setYear(e.target.value)}
-        />
-        <input
-          type="number"
-          placeholder="Month (1-12)"
-          value={month}
-          onChange={(e) => setMonth(e.target.value)}
-        />
-        <input
-          type="number"
-          placeholder="Limit"
-          value={limit}
-          onChange={(e) => setLimit(e.target.value)}
-        />
-        <button onClick={fetchArtists}>Search</button>
-      </div>
-
-      {loading && <p>Loading...</p>}
-
-      <table>
-        <thead>
-          <tr>
-            <th>#</th>
-            <th>Artist</th>
-            <th>Streams</th>
-          </tr>
-        </thead>
-        <tbody>
-          {artists.map((artist, index) => (
-            <tr key={index}>
-              <td>{index + 1}</td>
-              <td>{artist.name}</td>
-              <td>{artist.stream_count}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+      <SearchBar filters={filters} onFilterChange={setFilters} />
+      
+      {loading && <p className="text-white">Loading...</p>}
+      
+      <Table 
+        data={artists} 
+        columns={['name', 'stream_count']}
+        columnLabels={['Artist', 'Streams']}
+      />
     </div>
   );
 }

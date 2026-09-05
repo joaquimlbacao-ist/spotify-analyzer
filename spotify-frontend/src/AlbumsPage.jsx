@@ -1,24 +1,30 @@
 import { useState, useEffect } from 'react';
+import { useDebounce } from './useDebounce';
+import SearchBar from './SearchBar';
+import Table from './Table';
 
 export default function AlbumsPage() {
   const [albums, setAlbums] = useState([]);
-  const [artist, setArtist] = useState('');
-  const [year, setYear] = useState('');
-  const [month, setMonth] = useState('');
-  const [limit, setLimit] = useState(10);
+  const [filters, setFilters] = useState({
+    artist: '',
+    year: '',
+    month: '',
+    limit: 10
+  });
   const [loading, setLoading] = useState(false);
+  const debouncedFilters = useDebounce(filters, 500);
 
   useEffect(() => {
     fetchAlbums();
-  }, []);
+  }, [debouncedFilters]);
 
   const fetchAlbums = async () => {
     setLoading(true);
     const params = new URLSearchParams();
-    params.append('limit', limit);
-    if (artist) params.append('artist', artist);
-    if (year) params.append('year', year);
-    if (month) params.append('month', month);
+    params.append('limit', filters.limit);
+    if (filters.artist) params.append('artist', filters.artist);
+    if (filters.year) params.append('year', filters.year);
+    if (filters.month) params.append('month', filters.month);
 
     const response = await fetch(`http://localhost:8000/api/albums?${params}`);
     const data = await response.json();
@@ -28,58 +34,17 @@ export default function AlbumsPage() {
 
   return (
     <div>
-      <h1>Top Albums</h1>
+      <h1 className="text-3xl font-bold text-white mb-6">Top Albums</h1>
       
-      <div>
-        <input
-          type="text"
-          placeholder="Artist"
-          value={artist}
-          onChange={(e) => setArtist(e.target.value)}
-        />
-        <input
-          type="number"
-          placeholder="Year"
-          value={year}
-          onChange={(e) => setYear(e.target.value)}
-        />
-        <input
-          type="number"
-          placeholder="Month (1-12)"
-          value={month}
-          onChange={(e) => setMonth(e.target.value)}
-        />
-        <input
-          type="number"
-          placeholder="Limit"
-          value={limit}
-          onChange={(e) => setLimit(e.target.value)}
-        />
-        <button onClick={fetchAlbums}>Search</button>
-      </div>
-
-      {loading && <p>Loading...</p>}
-
-      <table>
-        <thead>
-          <tr>
-            <th>#</th>
-            <th>Artist</th>
-            <th>Album</th>
-            <th>Streams</th>
-          </tr>
-        </thead>
-        <tbody>
-          {albums.map((album, index) => (
-            <tr key={index}>
-              <td>{index + 1}</td>
-              <td>{album.artist}</td>
-              <td>{album.name}</td>
-              <td>{album.stream_count}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+      <SearchBar filters={filters} onFilterChange={setFilters} />
+      
+      {loading && <p className="text-white">Loading...</p>}
+      
+      <Table 
+        data={albums} 
+        columns={['artist', 'name', 'stream_count']}
+        columnLabels={['Artist', 'Album', 'Streams']}
+      />
     </div>
   );
 }
