@@ -2,3 +2,4 @@
 # No external dependencies required
 # Python 3.9+
 pytest>=7.0
+flask>=2.0
