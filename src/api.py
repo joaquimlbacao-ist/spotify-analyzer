@@ -2,8 +2,10 @@ import sys
 from flask import Flask, request, jsonify
 from src.loader import load_all_streams
 from src.analyzer import StreamAnalyzer
+from flask_cors import CORS
 
 app = Flask(__name__)
+CORS(app)
 analyzer = None
 
 
