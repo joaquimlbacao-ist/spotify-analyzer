@@ -1,11 +1,11 @@
-from datetime import datetime
+from datetime import datetime, timezone
 from src.models import Stream
 
 def get_sample_streams():
     """Return test data."""
     return [
         Stream(
-            ts=datetime(2023, 6, 15, 10, 30),
+            ts=datetime(2023, 6, 15, 10, 30, tzinfo=timezone.utc),
             track_name="Blinding Lights",
             artist="The Weeknd",
             album="After Hours",
@@ -13,7 +13,7 @@ def get_sample_streams():
             track_uri="spotify:track:123"
         ),
         Stream(
-            ts=datetime(2023, 6, 15, 11, 0),
+            ts=datetime(2023, 6, 15, 11, 0, tzinfo=timezone.utc),
             track_name="505",
             artist="Arctic Monkeys",
             album="AM",
@@ -21,7 +21,7 @@ def get_sample_streams():
             track_uri="spotify:track:124"
         ),
         Stream(
-            ts=datetime(2023, 6, 20, 14, 0),
+            ts=datetime(2023, 6, 20, 14, 0, tzinfo=timezone.utc),
             track_name="Blinding Lights",
             artist="The Weeknd",
             album="After Hours",
@@ -29,7 +29,7 @@ def get_sample_streams():
             track_uri="spotify:track:123"
         ),
         Stream(
-            ts=datetime(2022, 12, 1, 10, 0),
+            ts=datetime(2022, 12, 1, 10, 0, tzinfo=timezone.utc),
             track_name="The Less I Know The Better",
             artist="Tame Impala",
             album="Lonerism",

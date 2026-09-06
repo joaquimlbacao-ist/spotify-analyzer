@@ -111,3 +111,47 @@ class TestStreamAnalyzer:
         
         # Should filter by both artist and date range
         assert all(t.artist == "The Weeknd" for t in results)
+
+    def test_total_ms_calculated(self, analyzer):
+        """Test that total_ms is calculated for artists."""
+        results = analyzer.top_artists(limit=10)
+        
+        assert all(r.total_ms > 0 for r in results)
+
+    def test_sort_by_streams(self, analyzer):
+        """Test sorting by streams (default)."""
+        results = analyzer.top_artists(limit=10, sort_by='streams')
+        
+        # Should be sorted by stream_count descending
+        assert results[0].stream_count >= results[1].stream_count
+
+    def test_sort_by_time(self, analyzer):
+        """Test sorting by time."""
+        results = analyzer.top_artists(limit=10, sort_by='time')
+        
+        # Should be sorted by total_ms descending
+        assert results[0].total_ms >= results[1].total_ms
+
+    def test_tracks_total_ms(self, analyzer):
+        """Test that tracks have total_ms calculated."""
+        results = analyzer.top_tracks(limit=10)
+        
+        assert all(r.total_ms > 0 for r in results)
+
+    def test_albums_total_ms(self, analyzer):
+        """Test that albums have total_ms calculated."""
+        results = analyzer.top_albums(limit=10)
+        
+        assert all(r.total_ms > 0 for r in results)
+
+    def test_sort_by_time_tracks(self, analyzer):
+        """Test tracks sorted by time."""
+        results = analyzer.top_tracks(limit=10, sort_by='time')
+        
+        assert results[0].total_ms >= results[1].total_ms if len(results) > 1 else True
+
+    def test_sort_by_time_albums(self, analyzer):
+        """Test albums sorted by time."""
+        results = analyzer.top_albums(limit=10, sort_by='time')
+        
+        assert results[0].total_ms >= results[1].total_ms if len(results) > 1 else True
