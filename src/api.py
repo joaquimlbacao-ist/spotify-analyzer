@@ -1,24 +1,25 @@
-import sys
 from flask import Flask, request, jsonify
-from src.loader import load_all_streams
+from src.loader import load_all_streams, StreamLoader
 from src.analyzer import StreamAnalyzer
 from flask_cors import CORS
+from werkzeug.utils import secure_filename
+import json
 
 app = Flask(__name__)
 CORS(app)
 analyzer = None
 
-
-
-def init_analyzer(data_folder=None):
-    if data_folder is None:
-        data_folder = sys.argv[1] if len(sys.argv) > 1 else "./data"
-    global analyzer
-    print(f"Loading streams from {data_folder}...")
-    streams = load_all_streams(data_folder)
-    analyzer = StreamAnalyzer(streams)
-    print(f"✓ Loaded {len(streams):,} streams")
-
+def process_json_files(file_objects):
+    """Parse JSON files and return stream list"""
+    streams = []
+    for file_obj in file_objects:
+        try:
+            data = json.load(file_obj)
+            if isinstance(data, list):
+                streams.extend(data)
+        except:
+            continue
+    return streams
 
 @app.route('/api/artists', methods=['GET'])
 def get_artists():
@@ -64,7 +65,30 @@ def get_albums():
     results = analyzer.top_albums(limit=limit, artist=artist, year=year, month=month, start_date=start_date, end_date= end_date, sort_by=sort_by)
     return jsonify([{'name': r.name, 'artist': r.artist, 'stream_count': r.stream_count, 'total_ms': r.total_ms} for r in results])
 
-
+@app.route('/api/upload', methods=['POST'])
+def upload_files():
+    """Upload and process Spotify JSON files"""
+    global current_data
+    
+    if 'files' not in request.files or len(request.files.getlist('files')) == 0:
+        return jsonify({'error': 'No files provided'}), 400
+    
+    files = request.files.getlist('files')
+    streams_data = process_json_files(files)
+    
+    if not streams_data:
+        return jsonify({'error': 'No valid data found'}), 400
+    
+    # Load data into analyzer
+    try:
+        global analyzer
+        loader = StreamLoader()
+        filtered_streams = loader.filter_streams(streams_data)
+        analyzer = StreamAnalyzer(filtered_streams)
+        
+        return jsonify({'count': len(filtered_streams), 'status': 'success'})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+    
 if __name__ == '__main__':
-    init_analyzer()
     app.run(debug=True, port=8000)

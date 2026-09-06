@@ -3,42 +3,22 @@ from pathlib import Path
 from datetime import datetime
 from src.models import Stream
 
-
-def load_all_streams(data_folder: str) -> list[Stream]:
-    """
-    Load and parse all JSON files from Spotify export folder.
+class StreamLoader:
+    """Parse raw JSON records into Stream objects"""
     
-    Filters:
-    - Skips podcasts and audiobooks (only tracks)
-    - Skips plays < 15 seconds
-    
-    Args:
-        data_folder: Path to folder containing StreamingHistory JSON files
-    
-    Returns:
-        List of Stream objects
-    """
-    streams = []
-    data_path = Path(data_folder)
-    
-    if not data_path.exists():
-        raise FileNotFoundError(f"Data folder not found: {data_folder}")
-    
-    # Find all JSON files matching Spotify export pattern
-    json_files = sorted(data_path.glob("Streaming_History_Audio*.json"))
-    
-    if not json_files:
-        raise FileNotFoundError(f"No Streaming_History_Audio JSON files found in {data_folder}")
-    
-    for json_file in json_files:
-        print(f"  Loading {json_file.name}...", end=" ")
+    @staticmethod
+    def filter_streams(records: list) -> list[Stream]:
+        """
+        Filter and parse raw JSON records into Stream objects.
         
-        with open(json_file, 'r', encoding='utf-8') as f:
-            records = json.load(f)
+        Filters:
+        - Skips podcasts and audiobooks (only tracks)
+        - Skips plays < 15 seconds
+        """
+        streams = []
         
-        file_streams = 0
         for record in records:
-            # Skip if not a music track (ignore podcasts/audiobooks)
+            # Skip if not a music track
             if record.get("master_metadata_track_name") is None:
                 continue
             
@@ -50,7 +30,11 @@ def load_all_streams(data_folder: str) -> list[Stream]:
             ts_str = record.get("ts", "")
             if not ts_str:
                 continue
-            ts = datetime.fromisoformat(ts_str.replace("Z", "+00:00"))
+            
+            try:
+                ts = datetime.fromisoformat(ts_str.replace("Z", "+00:00"))
+            except:
+                continue
             
             # Create Stream object
             stream = Stream(
@@ -62,8 +46,5 @@ def load_all_streams(data_folder: str) -> list[Stream]:
                 track_uri=record["spotify_track_uri"]
             )
             streams.append(stream)
-            file_streams += 1
         
-        print(f"{file_streams} valid streams")
-    
-    return streams
+        return streams
