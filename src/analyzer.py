@@ -1,5 +1,6 @@
 from collections import defaultdict
 from src.models import Stream, ArtistStats, TrackStats, AlbumStats
+from datetime import datetime
 
 
 class StreamAnalyzer:
@@ -32,7 +33,9 @@ class StreamAnalyzer:
         year: int = None, 
         month: int = None, 
         artist: str = None, 
-        album: str = None
+        album: str = None,
+        start_date: str = None,
+        end_date: str = None
     ) -> list[Stream]:
         """
         Apply filters to a list of streams.
@@ -56,14 +59,26 @@ class StreamAnalyzer:
             filtered = [s for s in filtered if s.ts.year == year and s.ts.month == month]
         
         if artist:
-            filtered = [s for s in filtered if s.artist == artist]
-        
+            filtered = [s for s in filtered if s.artist.lower() == artist.lower()]
+
         if album:
-            filtered = [s for s in filtered if s.album == album]
+            filtered = [s for s in filtered if s.album.lower() == album.lower()]
+
+        if start_date or end_date:
+            try:
+                if start_date:
+                    start = datetime.strptime(start_date, "%d-%m-%Y")
+                    filtered = [s for s in filtered if s.ts >= start]
+                
+                if end_date:
+                    end = datetime.strptime(end_date, "%d-%m-%Y")
+                    filtered = [s for s in filtered if s.ts <= end]
+            except ValueError:
+                pass  # If date format is invalid, ignore filter
         
         return filtered
     
-    def top_artists(self, limit: int = 10, year: int = None, month: int = None) -> list[ArtistStats]:
+    def top_artists(self, limit: int = 10, year: int = None, month: int = None, start_date: str = None, end_date: str = None) -> list[ArtistStats]:
         """
         Get top artists by stream count.
         
@@ -71,12 +86,14 @@ class StreamAnalyzer:
             limit: Number of results (default: 10)
             year: Filter to specific year
             month: Filter to specific month (requires year)
+            start_date: Filter from date (format: DD-MM-YYYY)
+            end_date: Filter to date (format: DD-MM-YYYY)
         
         Returns:
             List of ArtistStats sorted by stream count (descending)
         """
         streams = self.all_streams
-        streams = self._filter_streams(streams, year=year, month=month)
+        streams = self._filter_streams(streams, year=year, month=month, start_date=start_date, end_date=end_date)
         
         # Count streams per artist
         artist_counts = defaultdict(int)
@@ -103,7 +120,9 @@ class StreamAnalyzer:
         artist: str = None, 
         album: str = None,
         year: int = None, 
-        month: int = None
+        month: int = None,
+        start_date: str = None,
+        end_date: str = None
     ) -> list[TrackStats]:
         """
         Get top tracks by stream count.
@@ -114,12 +133,14 @@ class StreamAnalyzer:
             album: Filter to specific album
             year: Filter to specific year
             month: Filter to specific month (requires year)
+            start_date: Filter from date (format: DD-MM-YYYY)
+            end_date: Filter to date (format: DD-MM-YYYY)
         
         Returns:
             List of TrackStats sorted by stream count (descending)
         """
         streams = self.all_streams
-        streams = self._filter_streams(streams, year=year, month=month, artist=artist, album=album)
+        streams = self._filter_streams(streams, year=year, month=month, artist=artist, album=album, start_date=start_date, end_date=end_date)
         
         # Count streams per (artist, track_name)
         track_counts = defaultdict(int)
@@ -153,7 +174,9 @@ class StreamAnalyzer:
         limit: int = 10, 
         artist: str = None,
         year: int = None, 
-        month: int = None
+        month: int = None,
+        start_date: str = None,
+        end_date: str = None
     ) -> list[AlbumStats]:
         """
         Get top albums by stream count.
@@ -163,12 +186,14 @@ class StreamAnalyzer:
             artist: Filter to specific artist
             year: Filter to specific year
             month: Filter to specific month (requires year)
+            start_date: Filter from date (format: DD-MM-YYYY)
+            end_date: Filter to date (format: DD-MM-YYYY)
         
         Returns:
             List of AlbumStats sorted by stream count (descending)
         """
         streams = self.all_streams
-        streams = self._filter_streams(streams, year=year, month=month, artist=artist)
+        streams = self._filter_streams(streams, year=year, month=month, artist=artist, start_date=start_date, end_date=end_date)
         
         # Count streams per (artist, album)
         album_counts = defaultdict(int)
