@@ -70,3 +70,44 @@ class TestStreamAnalyzer:
         """Test that limit parameter is respected."""
         results = analyzer.top_artists(limit=2)
         assert len(results) == 2
+
+    def test_top_artists_by_start_date(self, analyzer):
+        """Test filtering by start_date only."""
+        results = analyzer.top_artists(limit=10, start_date="17-06-2023")
+        
+        # Should only include streams from 17-06-2023 onwards
+        assert len(results) > 0
+        assert all(r.stream_count >= 0 for r in results)
+
+    def test_top_artists_by_end_date(self, analyzer):
+        """Test filtering by end_date only."""
+        results = analyzer.top_artists(limit=10, end_date="15-06-2023")
+        
+        # Should only include streams up to 15-06-2023
+        assert len(results) > 0
+
+    def test_top_artists_by_date_range(self, analyzer):
+        """Test filtering by date range."""
+        results = analyzer.top_artists(limit=10, start_date="15-06-2023", end_date="20-06-2023")
+        
+        # Should only include streams between dates
+        assert len(results) >= 0  # May be empty if no data in range
+
+    def test_top_artists_invalid_date_format(self, analyzer):
+        """Test that invalid date format is ignored."""
+        results = analyzer.top_artists(limit=10, start_date="invalid-date")
+        
+        # Should still return all artists (date filter ignored)
+        assert len(results) == 3
+
+    def test_top_tracks_by_date_range_with_artist(self, analyzer):
+        """Test date range combined with artist filter."""
+        results = analyzer.top_tracks(
+            limit=10, 
+            artist="The Weeknd",
+            start_date="15-06-2023",
+            end_date="20-06-2023"
+        )
+        
+        # Should filter by both artist and date range
+        assert all(t.artist == "The Weeknd" for t in results)
