@@ -1,6 +1,6 @@
 from collections import defaultdict
 from src.models import Stream, ArtistStats, TrackStats, AlbumStats
-from datetime import datetime
+from datetime import datetime, timezone
 
 
 class StreamAnalyzer:
@@ -67,14 +67,14 @@ class StreamAnalyzer:
         if start_date or end_date:
             try:
                 if start_date:
-                    start = datetime.strptime(start_date, "%d-%m-%Y")
+                    start = datetime.strptime(start_date, "%d-%m-%Y").replace(tzinfo=timezone.utc)
                     filtered = [s for s in filtered if s.ts >= start]
                 
                 if end_date:
-                    end = datetime.strptime(end_date, "%d-%m-%Y")
+                    end = datetime.strptime(end_date, "%d-%m-%Y").replace(tzinfo=timezone.utc)
                     filtered = [s for s in filtered if s.ts <= end]
             except ValueError:
-                pass  # If date format is invalid, ignore filter
+                pass
         
         return filtered
     

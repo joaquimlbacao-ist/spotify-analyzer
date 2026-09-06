@@ -26,8 +26,10 @@ def get_artists():
     limit = int(request.args.get('limit', 10))
     year = request.args.get('year', type=int)
     month = request.args.get('month', type=int)
+    start_date = request.args.get('start_date')
+    end_date = request.args.get('end_date')
     
-    results = analyzer.top_artists(limit=limit, year=year, month=month)
+    results = analyzer.top_artists(limit=limit, year=year, month=month, start_date=start_date, end_date= end_date)
     return jsonify([{'name': r.name, 'stream_count': r.stream_count} for r in results])
 
 
@@ -39,8 +41,10 @@ def get_tracks():
     album = request.args.get('album')
     year = request.args.get('year', type=int)
     month = request.args.get('month', type=int)
+    start_date = request.args.get('start_date')
+    end_date = request.args.get('end_date')
     
-    results = analyzer.top_tracks(limit=limit, artist=artist, album=album, year=year, month=month)
+    results = analyzer.top_tracks(limit=limit, artist=artist, album=album, year=year, month=month, start_date=start_date, end_date= end_date)
     return jsonify([{'name': r.name, 'artist': r.artist, 'stream_count': r.stream_count} for r in results])
 
 
@@ -51,8 +55,10 @@ def get_albums():
     artist = request.args.get('artist')
     year = request.args.get('year', type=int)
     month = request.args.get('month', type=int)
+    start_date = request.args.get('start_date')
+    end_date = request.args.get('end_date')
     
-    results = analyzer.top_albums(limit=limit, artist=artist, year=year, month=month)
+    results = analyzer.top_albums(limit=limit, artist=artist, year=year, month=month, start_date=start_date, end_date= end_date)
     return jsonify([{'name': r.name, 'artist': r.artist, 'stream_count': r.stream_count} for r in results])
 
 
