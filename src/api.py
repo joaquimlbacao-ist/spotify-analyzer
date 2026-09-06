@@ -28,9 +28,10 @@ def get_artists():
     month = request.args.get('month', type=int)
     start_date = request.args.get('start_date')
     end_date = request.args.get('end_date')
+    sort_by = request.args.get('sort_by', 'streams')  # Default: streams
     
-    results = analyzer.top_artists(limit=limit, year=year, month=month, start_date=start_date, end_date= end_date)
-    return jsonify([{'name': r.name, 'stream_count': r.stream_count} for r in results])
+    results = analyzer.top_artists(limit=limit, year=year, month=month, start_date=start_date, end_date=end_date, sort_by=sort_by)
+    return jsonify([{'name': r.name, 'stream_count': r.stream_count, 'total_ms': r.total_ms} for r in results])
 
 
 @app.route('/api/tracks', methods=['GET'])
@@ -43,9 +44,10 @@ def get_tracks():
     month = request.args.get('month', type=int)
     start_date = request.args.get('start_date')
     end_date = request.args.get('end_date')
-    
-    results = analyzer.top_tracks(limit=limit, artist=artist, album=album, year=year, month=month, start_date=start_date, end_date= end_date)
-    return jsonify([{'name': r.name, 'artist': r.artist, 'stream_count': r.stream_count} for r in results])
+    sort_by = request.args.get('sort_by', 'streams')  # Default: streams
+
+    results = analyzer.top_tracks(limit=limit, artist=artist, album=album, year=year, month=month, start_date=start_date, end_date= end_date, sort_by=sort_by)
+    return jsonify([{'name': r.name, 'artist': r.artist, 'stream_count': r.stream_count, 'total_ms': r.total_ms} for r in results])
 
 
 @app.route('/api/albums', methods=['GET'])
@@ -57,9 +59,10 @@ def get_albums():
     month = request.args.get('month', type=int)
     start_date = request.args.get('start_date')
     end_date = request.args.get('end_date')
+    sort_by = request.args.get('sort_by', 'streams')  # Default: streams
     
-    results = analyzer.top_albums(limit=limit, artist=artist, year=year, month=month, start_date=start_date, end_date= end_date)
-    return jsonify([{'name': r.name, 'artist': r.artist, 'stream_count': r.stream_count} for r in results])
+    results = analyzer.top_albums(limit=limit, artist=artist, year=year, month=month, start_date=start_date, end_date= end_date, sort_by=sort_by)
+    return jsonify([{'name': r.name, 'artist': r.artist, 'stream_count': r.stream_count, 'total_ms': r.total_ms} for r in results])
 
 
 if __name__ == '__main__':
