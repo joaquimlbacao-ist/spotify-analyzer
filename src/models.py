@@ -18,7 +18,7 @@ class ArtistStats:
     """Aggregated statistics for an artist."""
     name: str
     stream_count: int
-
+    total_ms: int = 0
 
 @dataclass
 class TrackStats:
@@ -26,7 +26,7 @@ class TrackStats:
     name: str
     artist: str
     stream_count: int
-
+    total_ms: int = 0
 
 @dataclass
 class AlbumStats:
@@ -34,3 +34,4 @@ class AlbumStats:
     name: str
     artist: str
     stream_count: int
+    total_ms: int = 0

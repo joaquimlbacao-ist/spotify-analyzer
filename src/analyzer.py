@@ -78,7 +78,7 @@ class StreamAnalyzer:
         
         return filtered
     
-    def top_artists(self, limit: int = 10, year: int = None, month: int = None, start_date: str = None, end_date: str = None) -> list[ArtistStats]:
+    def top_artists(self, limit: int = 10, year: int = None, month: int = None, start_date: str = None, end_date: str = None, sort_by: str = 'streams') -> list[ArtistStats]:
         """
         Get top artists by stream count.
         
@@ -88,28 +88,32 @@ class StreamAnalyzer:
             month: Filter to specific month (requires year)
             start_date: Filter from date (format: DD-MM-YYYY)
             end_date: Filter to date (format: DD-MM-YYYY)
+            sort_by: 'streams' (default) or 'time' (by total_ms)
         
         Returns:
-            List of ArtistStats sorted by stream count (descending)
+            List of ArtistStats sorted by chosen metric (descending)
         """
         streams = self.all_streams
         streams = self._filter_streams(streams, year=year, month=month, start_date=start_date, end_date=end_date)
         
-        # Count streams per artist
+        # Count streams and sum ms per artist
         artist_counts = defaultdict(int)
+        artist_ms = defaultdict(int)
         for stream in streams:
             artist_counts[stream.artist] += 1
+            artist_ms[stream.artist] += stream.ms_played
         
-        # Sort by count (descending)
+        # Sort by chosen metric
+        sort_key = lambda x: artist_ms[x[0]] if sort_by == 'time' else x[1]
         sorted_artists = sorted(
             artist_counts.items(),
-            key=lambda x: x[1],
+            key=sort_key,
             reverse=True
         )[:limit]
         
         # Convert to ArtistStats objects
         results = [
-            ArtistStats(name=name, stream_count=count)
+            ArtistStats(name=name, stream_count=count, total_ms=artist_ms[name])
             for name, count in sorted_artists
         ]
         return results
@@ -122,7 +126,8 @@ class StreamAnalyzer:
         year: int = None, 
         month: int = None,
         start_date: str = None,
-        end_date: str = None
+        end_date: str = None,
+        sort_by: str = 'streams'
     ) -> list[TrackStats]:
         """
         Get top tracks by stream count.
@@ -135,26 +140,28 @@ class StreamAnalyzer:
             month: Filter to specific month (requires year)
             start_date: Filter from date (format: DD-MM-YYYY)
             end_date: Filter to date (format: DD-MM-YYYY)
+            sort_by: 'streams' (default) or 'time' (by total_ms)
         
         Returns:
-            List of TrackStats sorted by stream count (descending)
+            List of TrackStats sorted by chosen metric (descending)
         """
         streams = self.all_streams
         streams = self._filter_streams(streams, year=year, month=month, artist=artist, album=album, start_date=start_date, end_date=end_date)
         
         # Count streams per (artist, track_name)
         track_counts = defaultdict(int)
-        track_artists = {}  # Keep track of artist for display
+        track_ms = defaultdict(int)
         
         for stream in streams:
             key = (stream.artist, stream.track_name)
             track_counts[key] += 1
-            track_artists[key] = stream.artist
+            track_ms[key] += stream.ms_played
         
-        # Sort by count (descending)
+        # Sort by chosen metric
+        sort_key = lambda x: track_ms[x[0]] if sort_by == 'time' else x[1]
         sorted_tracks = sorted(
             track_counts.items(),
-            key=lambda x: x[1],
+            key=sort_key,
             reverse=True
         )[:limit]
         
@@ -163,7 +170,8 @@ class StreamAnalyzer:
             TrackStats(
                 name=(artist_track[0][1]),  # track name
                 artist=artist_track[0][0],  # artist name
-                stream_count=artist_track[1]
+                stream_count=artist_track[1],
+                total_ms=track_ms[artist_track[0]]
             )
             for artist_track in sorted_tracks
         ]
@@ -176,7 +184,8 @@ class StreamAnalyzer:
         year: int = None, 
         month: int = None,
         start_date: str = None,
-        end_date: str = None
+        end_date: str = None,
+        sort_by: str = 'streams'
     ) -> list[AlbumStats]:
         """
         Get top albums by stream count.
@@ -188,24 +197,28 @@ class StreamAnalyzer:
             month: Filter to specific month (requires year)
             start_date: Filter from date (format: DD-MM-YYYY)
             end_date: Filter to date (format: DD-MM-YYYY)
+            sort_by: 'streams' (default) or 'time' (by total_ms)
         
         Returns:
-            List of AlbumStats sorted by stream count (descending)
+            List of AlbumStats sorted by chosen metric (descending)
         """
         streams = self.all_streams
         streams = self._filter_streams(streams, year=year, month=month, artist=artist, start_date=start_date, end_date=end_date)
         
         # Count streams per (artist, album)
         album_counts = defaultdict(int)
+        album_ms = defaultdict(int)
         
         for stream in streams:
             key = (stream.artist, stream.album)
             album_counts[key] += 1
+            album_ms[key] += stream.ms_played
         
-        # Sort by count (descending)
+        # Sort by chosen metric
+        sort_key = lambda x: album_ms[x[0]] if sort_by == 'time' else x[1]
         sorted_albums = sorted(
             album_counts.items(),
-            key=lambda x: x[1],
+            key=sort_key,
             reverse=True
         )[:limit]
         
@@ -214,7 +227,8 @@ class StreamAnalyzer:
             AlbumStats(
                 name=artist_album[0][1],  # album name
                 artist=artist_album[0][0],  # artist name
-                stream_count=artist_album[1]
+                stream_count=artist_album[1],
+                total_ms=album_ms[artist_album[0]]
             )
             for artist_album in sorted_albums
         ]
