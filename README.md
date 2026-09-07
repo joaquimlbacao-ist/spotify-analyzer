@@ -20,14 +20,15 @@ Upload your Spotify listening history and explore your most-played artists, trac
 
 ## Download
 
-Download the latest standalone version from the [GitHub Releases](../../releases/latest) page.
+Download the latest version from the
+[GitHub Releases](../../releases/latest) page.
 
-Available versions:
+### macOS
 
-* macOS
-* Windows
+Download `Spotify-Analyzer-macOS.zip`, extract it, and open
+`Spotify Analyzer.app`.
 
-No Python or Node.js installation is required when using the standalone application.
+No Python or Node.js installation is required.
 
 ## Getting Your Spotify Data
 
@@ -219,4 +220,8 @@ dist/Spotify Analyzer.app
 The Windows executable can be generated using PyInstaller from a Windows environment.
 
 PyInstaller builds are platform-specific, so the Windows executable must be built on Windows.
+
+## Future Work
+
+- Windows standalone executable
 
