@@ -25,10 +25,26 @@ Download the latest version from the
 
 ### macOS
 
-Download `Spotify-Analyzer-macOS.zip`, extract it, and open
-`Spotify Analyzer.app`.
+Download `Spotify-Analyzer-macOS.zip`, extract it, and open `Spotify Analyzer.app`.
 
 No Python or Node.js installation is required.
+
+#### macOS Security Notice
+
+Because the application is currently not notarized by Apple, macOS may display a security warning when opening it for the first time.
+
+If this happens, go to **System Settings → Privacy & Security** and click **Open Anyway** for Spotify Analyzer.
+
+#### If the browser does not open automatically
+
+The application starts a local server and should automatically open Spotify Analyzer in your browser.
+
+If the browser does not open automatically, open your browser and go to:
+
+`http://127.0.0.1:8000`
+
+The application must remain open while using Spotify Analyzer.
+
 
 ## Getting Your Spotify Data
 
