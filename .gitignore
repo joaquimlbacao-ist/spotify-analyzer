@@ -1,2 +1,14 @@
+# Python
 __pycache__/
 *.py[cod]
+.pytest_cache/
+
+# PyInstaller generated files
+build/
+dist/
+src/build/
+src/dist/
+
+# React
+spotify-frontend/node_modules/
+spotify-frontend/build/

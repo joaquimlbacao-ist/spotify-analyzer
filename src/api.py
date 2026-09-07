@@ -1,12 +1,34 @@
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, send_from_directory
 from src.loader import load_all_streams, StreamLoader
 from src.analyzer import StreamAnalyzer
 from flask_cors import CORS
-from werkzeug.utils import secure_filename
 import json
+import os
+import sys
 
-app = Flask(__name__)
+
+def get_frontend_path():
+    """Get the path to the React build, both in development and PyInstaller."""
+    if getattr(sys, 'frozen', False):
+        # PyInstaller
+        base_path = sys._MEIPASS
+    else:
+        # Normal development
+        base_path = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
+    return os.path.join(base_path, 'spotify-frontend', 'build')
+
+
+FRONTEND_BUILD = get_frontend_path()
+
+app = Flask(
+    __name__,
+    static_folder=FRONTEND_BUILD,
+    static_url_path=''
+)
+
 CORS(app)
+
 analyzer = None
 
 def process_json_files(file_objects):
@@ -89,6 +111,17 @@ def upload_files():
         return jsonify({'count': len(filtered_streams), 'status': 'success'})
     except Exception as e:
         return jsonify({'error': str(e)}), 500
-    
+
+@app.route('/', defaults={'path': ''})
+@app.route('/<path:path>')
+def serve_react(path):
+    """Serve the React frontend."""
+    file_path = os.path.join(FRONTEND_BUILD, path)
+
+    if path and os.path.isfile(file_path):
+        return send_from_directory(FRONTEND_BUILD, path)
+
+    return send_from_directory(FRONTEND_BUILD, 'index.html')
+
 if __name__ == '__main__':
-    app.run(debug=True, port=8000)
+    app.run(host='127.0.0.1', port=8000, debug=False)
