@@ -1,87 +1,222 @@
 # Spotify Analyzer
 
-Analyze your Spotify listening history from your exported data.
+A web-based application for analyzing your Spotify listening history.
 
-## Setup
+Upload your Spotify listening history and explore your most-played artists, tracks, and albums, with filters for different time periods and other criteria.
 
-1. **Get your Spotify data:**
-   - Go to https://www.spotify.com/account/privacy/
-   - Request your data download
-   - Wait for email, download the archive
-   - Extract it locally
+![Spotify Analyzer](docs/screenshots/albums.png)
 
-2. **Prepare the data folder:**
-   - Find the folder containing `Streaming_History_Audio_*.json` files
-   - Note the path (e.g., `/Users/joaquim/Downloads/MySpotifyData`)
+## Features
 
-## Running
+* Analyze your Spotify listening history
+* View your top artists, tracks, and albums
+* Filter results by year, month, or date range
+* Filter tracks and albums by artist
+* Sort results by stream count or listening time
+* View total listening time and stream counts
+* Upload multiple Spotify JSON files
+* Modern React web interface
+* Standalone desktop application with no Python or Node.js required
+
+## Download
+
+Download the latest standalone version from the [GitHub Releases](../../releases/latest) page.
+
+Available versions:
+
+* macOS
+* Windows
+
+No Python or Node.js installation is required when using the standalone application.
+
+## Getting Your Spotify Data
+
+Spotify allows you to download your listening history from your account's privacy settings.
+
+1. Go to [Spotify Account Privacy](https://www.spotify.com/account/privacy/)
+2. Request your data download
+3. Wait for Spotify to prepare your data
+4. Download and extract the archive
+5. Locate the JSON files containing your streaming history
+
+The application supports Spotify's extended streaming history files, such as:
+
+```text
+Streaming_History_Audio_*.json
+```
+
+You can upload one or multiple JSON files directly through the application.
+
+## Running Locally
+
+### Backend
+
+Python 3.9 or later is required.
+
+Install the dependencies:
 
 ```bash
-# Using default ./data folder
-python main.py
-
-# Using custom folder
-python main.py /path/to/spotify/data
+pip install -r requirements.txt
 ```
 
-## Usage
+Start the application:
 
-The app will show an interactive menu:
-
-```
-=== SPOTIFY ANALYZER ===
-1. Top Artists
-2. Top Tracks
-3. Top Albums
-4. Exit
+```bash
+python app.py
 ```
 
-For each query, you can optionally filter by:
-- **Year** and **Month**
-- **Artist** and **Album** (depending on query type)
-- **Number of results** (default: 10)
+The application starts the Flask server and automatically opens the web interface in your browser.
 
-## Example
+By default, the application runs at:
 
+```text
+http://127.0.0.1:8000
 ```
-Select (1-4): 1
-Filter by year? (2015-2024, or leave blank): 2023
-Filter by month? (1-12, or leave blank): 6
-How many results? (default: 10): 5
 
-=== TOP ARTISTS ===
-Year 2023
+### Frontend Development
 
-#  | Artist              | Streams
-----|---------------------|----------
-1  | The Weeknd          | 145
-2  | Arctic Monkeys      | 98
-3  | Tame Impala         | 87
-4  | Frank Ocean         | 76
-5  | Tyler, The Creator  | 65
+The frontend is built with React.
+
+From the `spotify-frontend` directory:
+
+```bash
+npm install
+npm start
 ```
+
+The React development server runs at:
+
+```text
+http://localhost:3000
+```
+
+To build the production frontend:
+
+```bash
+npm run build
+```
+
+The production build is served directly by Flask.
+
+## Architecture
+
+Spotify Analyzer consists of a React frontend and a Python/Flask backend.
+
+```text
+┌─────────────────────────┐
+│      React Frontend     │
+│                         │
+│ Artists · Tracks ·      │
+│ Albums · Filters        │
+└────────────┬────────────┘
+             │ HTTP
+             ▼
+┌─────────────────────────┐
+│      Flask Backend      │
+│                         │
+│ REST API · File Upload  │
+└────────────┬────────────┘
+             │
+             ▼
+┌─────────────────────────┐
+│     Spotify Analyzer    │
+│                         │
+│ Loading · Filtering ·   │
+│ Analysis · Aggregation  │
+└─────────────────────────┘
+```
+
+In production, Flask serves both the API and the React production build, allowing the entire application to run from a single local server.
 
 ## Data Processing
 
-- **Filters out:**
-  - Podcasts and audiobooks
-  - Plays shorter than 15 seconds
-  
-- **Keeps:** All music tracks from your export
+The analyzer processes Spotify's JSON listening history before performing the analysis.
 
-- **Metrics:** Stream count (total number of plays)
+### Excluded
 
-## Files
+* Podcasts
+* Audiobooks
+* Plays shorter than 15 seconds
 
-- `models.py` — Data structures
-- `loader.py` — Parse JSON exports
-- `analyzer.py` — Query engine with indexing
-- `ui.py` — Terminal interface
-- `main.py` — Entry point
+### Included
 
-## Future Features
+* Music tracks from the Spotify listening history
 
-- Time-based metrics (hours listened, not just plays)
-- Day-level filtering
-- Web interface
-- Trend analysis
+### Metrics
+
+The application supports metrics including:
+
+* Stream count
+* Total listening time
+
+Results can be filtered by different time periods and dimensions depending on the selected analysis.
+
+## Project Structure
+
+```text
+spotify-analyzer/
+│
+├── app.py                 # Application entry point
+├── app.spec               # PyInstaller configuration
+├── requirements.txt
+├── README.md
+│
+├── src/
+│   ├── api.py             # Flask API and React serving
+│   ├── analyzer.py        # Analysis and query logic
+│   ├── loader.py          # Spotify JSON loading and filtering
+│   ├── models.py          # Data models
+│   └── __init__.py
+│
+└── spotify-frontend/
+    ├── src/
+    │   ├── components/
+    │   └── pages/
+    ├── public/
+    └── package.json
+```
+
+## Tech Stack
+
+### Frontend
+
+* React
+* JavaScript
+* Recharts
+
+### Backend
+
+* Python
+* Flask
+* Flask-CORS
+
+### Packaging
+
+* PyInstaller
+
+## Standalone Application
+
+The application can be packaged as a standalone desktop application using PyInstaller.
+
+The packaged application includes the Python backend and React production build, so users do not need to install Python or Node.js.
+
+### macOS
+
+Build the application with:
+
+```bash
+pyinstaller --clean app.spec
+```
+
+The application will be generated in:
+
+```text
+dist/Spotify Analyzer.app
+```
+
+### Windows
+
+The Windows executable can be generated using PyInstaller from a Windows environment.
+
+PyInstaller builds are platform-specific, so the Windows executable must be built on Windows.
+
