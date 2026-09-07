@@ -4,7 +4,7 @@ A web-based application for analyzing your Spotify listening history.
 
 Upload your Spotify listening history and explore your most-played artists, tracks, and albums, with filters for different time periods and other criteria.
 
-![Spotify Analyzer](docs/screenshots/albums.png)
+![Spotify Analyzer](docs/screenshots/tracks.png)
 
 ## Features
 
