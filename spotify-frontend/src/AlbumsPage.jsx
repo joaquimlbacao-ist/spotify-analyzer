@@ -35,7 +35,9 @@ export default function AlbumsPage() {
     if (filters.start_date) params.append('start_date', filters.start_date);
     if (filters.end_date) params.append('end_date', filters.end_date);
 
-    const response = await fetch(`/api/albums?${params}`);
+    const API_URL = process.env.REACT_APP_API_URL;
+
+    const response = await fetch(`${API_URL}/api/albums?${params}`);
     const data = await response.json();
     setAlbums(data);
     setLoading(false);

@@ -47,7 +47,9 @@ export default function FileUpload({ onUploadSuccess }) {
     });
 
     try {
-      const response = await fetch('/api/upload', {
+      const API_URL = process.env.REACT_APP_API_URL;
+
+      const response = await fetch(`${API_URL}/api/upload`, {
         method: 'POST',
         body: formData
       });

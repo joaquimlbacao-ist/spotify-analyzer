@@ -33,7 +33,8 @@ export default function ArtistsPage() {
     if (filters.start_date) params.append('start_date', filters.start_date);
     if (filters.end_date) params.append('end_date', filters.end_date);
 
-    const response = await fetch(`/api/artists?${params}`);
+    const API_URL = process.env.REACT_APP_API_URL;
+    const response = await fetch(`${API_URL}/api/artists?${params}`);
     const data = await response.json();
     setArtists(data);
     setLoading(false);
