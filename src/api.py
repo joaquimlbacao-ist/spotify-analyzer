@@ -75,18 +75,18 @@ def get_tracks():
 
 @app.route('/api/albums', methods=['GET'])
 def get_albums():
-    """GET /api/albums?limit=10&artist=The Weeknd&year=2023"""
+    """GET /api/albums?limit=10&artist=The Weeknd&year=2023&aggregate=false"""
     limit = int(request.args.get('limit', 10))
     artist = request.args.get('artist')
     year = request.args.get('year', type=int)
     month = request.args.get('month', type=int)
     start_date = request.args.get('start_date')
     end_date = request.args.get('end_date')
-    sort_by = request.args.get('sort_by', 'streams')  # Default: streams
+    sort_by = request.args.get('sort_by', 'streams')
+    aggregate = request.args.get('aggregate', 'false').lower() == 'true'  # ADD THIS
     
-    results = analyzer.top_albums(limit=limit, artist=artist, year=year, month=month, start_date=start_date, end_date= end_date, sort_by=sort_by)
-    return jsonify([{'name': r.name, 'artist': r.artist, 'stream_count': r.stream_count, 'total_ms': r.total_ms} for r in results])
-
+    results = analyzer.top_albums(limit=limit, artist=artist, year=year, month=month, start_date=start_date, end_date=end_date, sort_by=sort_by, aggregate=aggregate)
+    return jsonify([{'name': r.name, 'artist': r.artist, 'stream_count': r.stream_count, 'total_ms': r.total_ms, 'is_aggregated': r.is_aggregated} for r in results])
 @app.route('/api/upload', methods=['POST'])
 def upload_files():
     """Upload and process Spotify JSON files"""
@@ -124,4 +124,14 @@ def serve_react(path):
     return send_from_directory(FRONTEND_BUILD, 'index.html')
 
 if __name__ == '__main__':
+    # Dev mode: auto-load from ./data folder if it exists
+    if os.path.exists('../data'):
+        from src.loader import load_all_streams
+        try:
+            streams = load_all_streams('./data')
+            analyzer = StreamAnalyzer(streams)
+            print(f"✓ Loaded {len(streams):,} streams from ./data")
+        except FileNotFoundError:
+            print("⚠ ./data folder not found. Upload files via UI.")
+    
     app.run(host='127.0.0.1', port=8000, debug=False)

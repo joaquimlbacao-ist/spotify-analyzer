@@ -1,6 +1,57 @@
 from collections import defaultdict
 from src.models import Stream, ArtistStats, TrackStats, AlbumStats
 from datetime import datetime, timezone
+import re
+
+def are_album_versions(album1, album2):
+    """
+    Check whether two album titles are likely different versions
+    of the same album.
+    """
+
+    def normalize(title):
+        title = title.lower().strip()
+
+        # Ignore leading articles
+        title = re.sub(r'^(the|a|an)\s+', '', title)
+
+        # Treat common separators as word boundaries
+        title = re.sub(r'[\(\)\[\],:]', ' ', title)
+        title = re.sub(r'\s*-\s*', ' ', title)
+
+        # Normalize whitespace
+        title = re.sub(r'\s+', ' ', title).strip()
+
+        return title
+
+    a = normalize(album1)
+    b = normalize(album2)
+
+    if not a or not b:
+        return False
+
+    # Split into words
+    words_a = a.split()
+    words_b = b.split()
+
+    # Find longest common prefix
+    common = []
+
+    for word_a, word_b in zip(words_a, words_b):
+        if word_a != word_b:
+            break
+        common.append(word_a)
+
+    # No common prefix
+    if not common:
+        return False
+
+    # If the titles are identical, they're obviously the same album
+    if a == b:
+        return True
+
+    # Any shared prefix is considered sufficient
+    return True
 
 
 class StreamAnalyzer:
@@ -12,8 +63,54 @@ class StreamAnalyzer:
     
     def __init__(self, streams: list[Stream]):
         self.all_streams = streams
+        self._build_album_canonical()
         self._build_indexes()
-    
+
+    def _build_album_canonical(self):
+        """Build mapping of album variants to canonical names (preferring shortest)."""
+        self.album_canonical = {}  # (artist, album) -> canonical_name
+        seen_albums = {}  # artist -> list of canonical names
+        canonical_map = {}  # canonical -> set of all variants
+        
+        for stream in self.all_streams:
+            key = (stream.artist, stream.album)
+            
+            # Already processed
+            if key in self.album_canonical:
+                continue
+            
+            # Check if this album matches an existing canonical one
+            canonical = stream.album
+            artist_albums = seen_albums.get(stream.artist, [])
+            
+            matched_canonical = None
+            for existing_canonical in artist_albums:
+                if are_album_versions(stream.album, existing_canonical):
+                    # Found a match - use the shorter name
+                    if len(stream.album) < len(existing_canonical):
+                        # Current version is simpler, promote it
+                        canonical = stream.album
+                        matched_canonical = existing_canonical
+                    else:
+                        canonical = existing_canonical
+                    break
+            
+            # If we promoted a new canonical, update all existing variants
+            if matched_canonical and canonical != matched_canonical:
+                for (artist, album), old_canonical in list(self.album_canonical.items()):
+                    if old_canonical == matched_canonical and artist == stream.artist:
+                        self.album_canonical[(artist, album)] = canonical
+                # Update canonical_map
+                if matched_canonical in canonical_map:
+                    canonical_map[canonical] = canonical_map.pop(matched_canonical)
+            
+            self.album_canonical[key] = canonical
+            
+            if canonical not in seen_albums.get(stream.artist, []):
+                seen_albums.setdefault(stream.artist, []).append(canonical)
+            
+            canonical_map.setdefault(canonical, set()).add(stream.album)
+
     def _build_indexes(self):
         """Create lookup tables for fast queries."""
         self.by_artist = defaultdict(list)
@@ -185,7 +282,8 @@ class StreamAnalyzer:
         month: int = None,
         start_date: str = None,
         end_date: str = None,
-        sort_by: str = 'streams'
+        sort_by: str = 'streams',
+        aggregate: bool = False
     ) -> list[AlbumStats]:
         """
         Get top albums by stream count.
@@ -198,6 +296,7 @@ class StreamAnalyzer:
             start_date: Filter from date (format: DD-MM-YYYY)
             end_date: Filter to date (format: DD-MM-YYYY)
             sort_by: 'streams' (default) or 'time' (by total_ms)
+            aggregate: If True, combine album versions into canonical names
         
         Returns:
             List of AlbumStats sorted by chosen metric (descending)
@@ -208,9 +307,18 @@ class StreamAnalyzer:
         # Count streams per (artist, album)
         album_counts = defaultdict(int)
         album_ms = defaultdict(int)
+        album_variants = defaultdict(set)  # Track original names per canonical
         
         for stream in streams:
-            key = (stream.artist, stream.album)
+            if aggregate:
+                # Use canonical name
+                key = (stream.artist, self.album_canonical[(stream.artist, stream.album)])
+                album_variants[key].add(stream.album)
+            else:
+                # Use original name
+                key = (stream.artist, stream.album)
+                album_variants[key].add(stream.album)
+            
             album_counts[key] += 1
             album_ms[key] += stream.ms_played
         
@@ -228,7 +336,8 @@ class StreamAnalyzer:
                 name=artist_album[0][1],  # album name
                 artist=artist_album[0][0],  # artist name
                 stream_count=artist_album[1],
-                total_ms=album_ms[artist_album[0]]
+                total_ms=album_ms[artist_album[0]],
+                is_aggregated=aggregate and len(album_variants[artist_album[0]]) > 1
             )
             for artist_album in sorted_albums
         ]

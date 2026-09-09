@@ -35,3 +35,4 @@ class AlbumStats:
     artist: str
     stream_count: int
     total_ms: int = 0
+    is_aggregated: bool = False

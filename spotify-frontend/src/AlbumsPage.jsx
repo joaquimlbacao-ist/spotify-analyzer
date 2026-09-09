@@ -18,17 +18,19 @@ export default function AlbumsPage() {
   const [loading, setLoading] = useState(false);
   const [viewType, setViewType] = useState('table');
   const [metric, setMetric] = useState('streams');
+  const [aggregate, setAggregate] = useState(false);
   const debouncedFilters = useDebounce(filters, 500);
 
   useEffect(() => {
     fetchAlbums();
-  }, [debouncedFilters, metric]);
+  }, [debouncedFilters, metric, aggregate]);
 
   const fetchAlbums = async () => {
     setLoading(true);
     const params = new URLSearchParams();
     params.append('limit', filters.limit);
     params.append('sort_by', metric);
+    params.append('aggregate', aggregate);
     if (filters.artist) params.append('artist', filters.artist);
     if (filters.year) params.append('year', filters.year);
     if (filters.month) params.append('month', filters.month);
@@ -68,16 +70,28 @@ export default function AlbumsPage() {
           </button>
         </div>
 
-        <div className="flex items-center gap-2">
-          <label className="text-white font-semibold">Sort by:</label>
-          <select 
-            value={metric}
-            onChange={(e) => setMetric(e.target.value)}
-            className="px-4 py-2 bg-gray-700 text-white rounded focus:outline-none focus:ring-2 focus:ring-green-500"
-          >
-            <option value="streams">Streams</option>
-            <option value="time">Time</option>
-          </select>
+        <div className="flex items-center gap-4">
+          <label className="flex items-center gap-2 text-white cursor-pointer">
+            <input
+              type="checkbox"
+              checked={aggregate}
+              onChange={(e) => setAggregate(e.target.checked)}
+              className="w-4 h-4"
+            />
+            <span>Combine Album Versions</span>
+          </label>
+
+          <div className="flex items-center gap-2">
+            <label className="text-white font-semibold">Sort by:</label>
+            <select 
+              value={metric}
+              onChange={(e) => setMetric(e.target.value)}
+              className="px-4 py-2 bg-gray-700 text-white rounded focus:outline-none focus:ring-2 focus:ring-green-500"
+            >
+              <option value="streams">Streams</option>
+              <option value="time">Time</option>
+            </select>
+          </div>
         </div>
       </div>
 
@@ -87,16 +101,17 @@ export default function AlbumsPage() {
         <Table 
           data={albums.map(a => ({
             ...a,
+            display_name: a.is_aggregated ? `${a.name} (All Versions)` : a.name,
             display_value: metric === 'time' ? formatMs(a.total_ms) : a.stream_count
           }))} 
-          columns={['artist', 'name', 'display_value']}
+          columns={['artist', 'display_name', 'display_value']}
           columnLabels={['Artist', 'Album', metric === 'time' ? 'Total Time' : 'Streams']}
         />
       ) : (
         <BarChartComponent 
           data={metric === 'time' ? albums.map(a => ({...a, display_value: msToHours(a.total_ms)})) : albums} 
           dataKey={metric === 'time' ? 'display_value' : 'stream_count'}
-          nameKey="name" 
+          nameKey={a => a.is_aggregated ? `${a.name} (All Versions)` : a.name}
         />
       )}
     </div>

@@ -12,3 +12,6 @@ src/dist/
 # React
 spotify-frontend/node_modules/
 spotify-frontend/build/.DS_Store
+
+# local spotify data
+data/
