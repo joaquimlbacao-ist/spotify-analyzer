@@ -122,16 +122,3 @@ def serve_react(path):
         return send_from_directory(FRONTEND_BUILD, path)
 
     return send_from_directory(FRONTEND_BUILD, 'index.html')
-
-if __name__ == '__main__':
-    # Dev mode: auto-load from ./data folder if it exists
-    if os.path.exists('../data'):
-        from src.loader import load_all_streams
-        try:
-            streams = load_all_streams('./data')
-            analyzer = StreamAnalyzer(streams)
-            print(f"✓ Loaded {len(streams):,} streams from ./data")
-        except FileNotFoundError:
-            print("⚠ ./data folder not found. Upload files via UI.")
-    
-    app.run(host='127.0.0.1', port=8000, debug=False)
