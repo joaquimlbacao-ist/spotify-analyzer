@@ -17,6 +17,7 @@ Upload your Spotify listening history and explore your most-played artists, trac
 * Upload multiple Spotify JSON files
 * Modern React web interface
 * Standalone desktop application with no Python or Node.js required
+* Docker containerization for easy deployment
 
 ## Download
 
@@ -115,6 +116,38 @@ npm run build
 
 The production build is served directly by Flask.
 
+## Running with Docker
+
+### Prerequisites
+
+Install [Docker Desktop](https://www.docker.com/products/docker-desktop).
+
+### Build and Run
+
+Build the image:
+
+```bash
+docker build -t spotify-analyzer .
+```
+
+Run the container:
+
+```bash
+docker run -p 8000:8000 spotify-analyzer
+```
+
+Visit `http://localhost:8000` in your browser.
+
+The container includes the Python backend and React frontend, so no additional setup is required.
+
+To use a different port, replace `8000` with your desired port:
+
+```bash
+docker run -p 5000:8000 spotify-analyzer
+```
+
+Then visit `http://localhost:5000`.
+
 ## Architecture
 
 Spotify Analyzer consists of a React frontend and a Python/Flask backend.
@@ -175,6 +208,7 @@ spotify-analyzer/
 │
 ├── app.py                 # Application entry point
 ├── app.spec               # PyInstaller configuration
+├── Dockerfile             # Docker configuration
 ├── requirements.txt
 ├── README.md
 │
@@ -210,14 +244,13 @@ spotify-analyzer/
 ### Packaging
 
 * PyInstaller
+* Docker
 
 ## Standalone Application
 
-The application can be packaged as a standalone desktop application using PyInstaller.
+The application can be packaged as a standalone desktop application using PyInstaller or Docker.
 
-The packaged application includes the Python backend and React production build, so users do not need to install Python or Node.js.
-
-### macOS
+### macOS with PyInstaller
 
 Build the application with:
 
@@ -231,6 +264,10 @@ The application will be generated in:
 dist/Spotify Analyzer.app
 ```
 
+### Docker
+
+The application can also be containerized using Docker for cross-platform deployment. See the [Running with Docker](#running-with-docker) section above.
+
 ### Windows
 
 The Windows executable can be generated using PyInstaller from a Windows environment.
@@ -240,4 +277,4 @@ PyInstaller builds are platform-specific, so the Windows executable must be buil
 ## Future Work
 
 - Windows standalone executable
-
+- Enhanced data visualization options
