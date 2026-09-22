@@ -59,7 +59,6 @@ def load_all_streams(data_folder: str) -> list[Stream]:
                 artist=record["master_metadata_album_artist_name"],
                 album=record["master_metadata_album_album_name"],
                 ms_played=record["ms_played"],
-                track_uri=record["spotify_track_uri"]
             )
             streams.append(stream)
             file_streams += 1
@@ -108,7 +107,6 @@ class StreamLoader:
                 artist=record["master_metadata_album_artist_name"],
                 album=record["master_metadata_album_album_name"],
                 ms_played=record["ms_played"],
-                track_uri=record["spotify_track_uri"]
             )
             streams.append(stream)
         

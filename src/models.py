@@ -10,7 +10,6 @@ class Stream:
     artist: str
     album: str
     ms_played: int
-    track_uri: str
 
 
 @dataclass

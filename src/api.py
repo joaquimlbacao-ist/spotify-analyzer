@@ -5,6 +5,7 @@ from flask_cors import CORS
 import json
 import os
 import sys
+from src.database import clear_streams, insert_streams_bulk
 
 
 def get_frontend_path():
@@ -87,30 +88,62 @@ def get_albums():
     
     results = analyzer.top_albums(limit=limit, artist=artist, year=year, month=month, start_date=start_date, end_date=end_date, sort_by=sort_by, aggregate=aggregate)
     return jsonify([{'name': r.name, 'artist': r.artist, 'stream_count': r.stream_count, 'total_ms': r.total_ms, 'is_aggregated': r.is_aggregated} for r in results])
+
 @app.route('/api/upload', methods=['POST'])
 def upload_files():
     """Upload and process Spotify JSON files"""
-    global current_data
+    global analyzer
     
-    if 'files' not in request.files or len(request.files.getlist('files')) == 0:
-        return jsonify({'error': 'No files provided'}), 400
-    
-    files = request.files.getlist('files')
-    streams_data = process_json_files(files)
-    
-    if not streams_data:
-        return jsonify({'error': 'No valid data found'}), 400
-    
-    # Load data into analyzer
     try:
-        global analyzer
+        if 'files' not in request.files or len(request.files.getlist('files')) == 0:
+            return jsonify({'error': 'No files provided'}), 400
+        
+        files = request.files.getlist('files')
+        streams_data = process_json_files(files)
+        
+        if not streams_data:
+            return jsonify({'error': 'No valid data found'}), 400
+        
         loader = StreamLoader()
         filtered_streams = loader.filter_streams(streams_data)
-        analyzer = StreamAnalyzer(filtered_streams)
+        
+        clear_streams()
+        streams_to_insert = [
+            (s.artist, s.track_name, s.album, s.ms_played, s.ts)
+            for s in filtered_streams
+        ]
+        insert_streams_bulk(streams_to_insert)
+        
+        analyzer = StreamAnalyzer()
         
         return jsonify({'count': len(filtered_streams), 'status': 'success'})
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+    
+# @app.route('/api/upload', methods=['POST'])
+# def upload_files():
+#     """Upload and process Spotify JSON files"""
+#     global current_data
+    
+#     if 'files' not in request.files or len(request.files.getlist('files')) == 0:
+#         return jsonify({'error': 'No files provided'}), 400
+    
+#     files = request.files.getlist('files')
+#     streams_data = process_json_files(files)
+    
+#     if not streams_data:
+#         return jsonify({'error': 'No valid data found'}), 400
+    
+#     # Load data into analyzer
+#     try:
+#         global analyzer
+#         loader = StreamLoader()
+#         filtered_streams = loader.filter_streams(streams_data)
+#         analyzer = StreamAnalyzer(filtered_streams)
+        
+#         return jsonify({'count': len(filtered_streams), 'status': 'success'})
+#     except Exception as e:
+#         return jsonify({'error': str(e)}), 500
 
 @app.route('/', defaults={'path': ''})
 @app.route('/<path:path>')
@@ -122,3 +155,4 @@ def serve_react(path):
         return send_from_directory(FRONTEND_BUILD, path)
 
     return send_from_directory(FRONTEND_BUILD, 'index.html')
+

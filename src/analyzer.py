@@ -2,6 +2,7 @@ from collections import defaultdict
 from src.models import Stream, ArtistStats, TrackStats, AlbumStats
 from datetime import datetime, timezone
 import re
+from src.database import get_all_streams
 
 def are_album_versions(album1, album2):
     """
@@ -60,11 +61,29 @@ class StreamAnalyzer:
     
     Handles filtering by year, month, artist, album and returns rankings.
     """
-    
-    def __init__(self, streams: list[Stream]):
-        self.all_streams = streams
+
+    def __init__(self):
+        # Load streams from database
+        db_streams = get_all_streams()
+        
+        # Convert database rows to Stream objects
+        self.all_streams = [
+            Stream(
+                artist=row[0],
+                track_name=row[1],
+                album=row[2],
+                ms_played=row[3],
+                ts=datetime.fromisoformat(row[4]) if isinstance(row[4], str) else row[4]
+            )
+            for row in db_streams
+        ]
+        
         self._build_album_canonical()
         self._build_indexes()
+    # def __init__(self, streams: list[Stream]):
+    #     self.all_streams = streams
+    #     self._build_album_canonical()
+    #     self._build_indexes()
 
     def _build_album_canonical(self):
         """Build mapping of album variants to canonical names (preferring shortest)."""
