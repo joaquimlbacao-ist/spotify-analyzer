@@ -6,6 +6,7 @@ import json
 import os
 import sys
 from src.database import clear_streams, insert_streams_bulk
+from src.music_service import get_album_cover
 
 
 def get_frontend_path():
@@ -145,6 +146,45 @@ def upload_files():
 #     except Exception as e:
 #         return jsonify({'error': str(e)}), 500
 
+@app.route('/api/albums/grid', methods=['GET'])
+def get_albums_grid():
+    """GET /api/albums/grid?limit=9 - top albums with cover art"""
+    limit = int(request.args.get('limit', 9))
+    year = request.args.get('year', type=int)
+    month = request.args.get('month', type=int)
+    start_date = request.args.get('start_date')
+    end_date = request.args.get('end_date')
+    sort_by = request.args.get('sort_by', 'streams')
+    aggregate = request.args.get('aggregate', 'false').lower() == 'true'
+    
+    try:
+        results = analyzer.top_albums(
+            limit=limit, 
+            year=year, 
+            month=month, 
+            start_date=start_date, 
+            end_date=end_date, 
+            sort_by=sort_by, 
+            aggregate=aggregate
+        )
+        
+        # Fetch covers for each album
+        albums_with_covers = []
+        for album in results:
+            cover_path = get_album_cover(album.artist, album.name)
+            albums_with_covers.append({
+                'name': album.name,
+                'artist': album.artist,
+                'stream_count': album.stream_count,
+                'total_ms': album.total_ms,
+                'is_aggregated': album.is_aggregated,
+                'cover_path': cover_path
+            })
+        
+        return jsonify(albums_with_covers)
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+    
 @app.route('/', defaults={'path': ''})
 @app.route('/<path:path>')
 def serve_react(path):

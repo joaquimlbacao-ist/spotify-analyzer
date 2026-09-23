@@ -16,3 +16,4 @@ spotify-frontend/build/.DS_Store
 # local spotify data
 data/
 spotify-analyzer.db
+album_covers/
