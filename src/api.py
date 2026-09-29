@@ -148,7 +148,7 @@ def upload_files():
 
 @app.route('/api/albums/grid', methods=['GET'])
 def get_albums_grid():
-    """GET /api/albums/grid?limit=9 - top albums with cover URLs"""
+    """GET /api/albums/grid?limit=9 - top albums with cached cover URLs"""
     limit = int(request.args.get('limit', 9))
     year = request.args.get('year', type=int)
     month = request.args.get('month', type=int)
@@ -163,7 +163,6 @@ def get_albums_grid():
         albums_with_covers = []
         for album in results:
             cover_url = get_album_cover(album.artist, album.name)
-            print(f"Album: {album.artist} - {album.name}, Cover URL: {cover_url}")
             albums_with_covers.append({
                 'name': album.name,
                 'artist': album.artist,
@@ -173,11 +172,16 @@ def get_albums_grid():
                 'cover_url': cover_url
             })
         
-        print(f"Returning {len(albums_with_covers)} albums with covers")
         return jsonify(albums_with_covers)
     except Exception as e:
         return jsonify({'error': str(e)}), 500
-        
+
+@app.route('/album_covers/<filename>')
+def serve_album_cover(filename):
+    """Serve album covers from local cache"""
+    covers_dir = os.path.join(os.path.dirname(__file__), '../album_covers')
+    return send_from_directory(covers_dir, filename)
+
 @app.route('/', defaults={'path': ''})
 @app.route('/<path:path>')
 def serve_react(path):

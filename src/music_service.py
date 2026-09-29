@@ -1,7 +1,14 @@
 import requests
+import os
 
 MUSICBRAINZ_BASE = "https://musicbrainz.org/ws/2"
 COVERART_BASE = "https://coverartarchive.org"
+COVERS_DIR = os.path.join(
+    os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+    "album_covers"
+)
+
+os.makedirs(COVERS_DIR, exist_ok=True)
 
 HEADERS = {
     "User-Agent": "SpotifyAnalyzer/1.0 (https://github.com/joaquimlbacao-ist/spotify-analyzer)"
@@ -36,9 +43,48 @@ def get_cover_url(release_group_mbid):
         print(f"Cover Art error: {e}")
         return None
 
+def download_cover(cover_url, artist, album):
+    """Download and save cover image locally"""
+    try:
+        response = requests.get(cover_url, timeout=10)
+        response.raise_for_status()
+        
+        safe_artist = artist.replace("/", "_").replace("\\", "_").replace(":", "_")[:50]
+        safe_album = album.replace("/", "_").replace("\\", "_").replace(":", "_")[:50]
+        filename = f"{safe_artist}_{safe_album}.jpg"
+        filepath = os.path.join(COVERS_DIR, filename)
+        
+        with open(filepath, "wb") as f:
+            f.write(response.content)
+        
+        return filename
+    except requests.RequestException as e:
+        print(f"Download error: {e}")
+        return None
+
 def get_album_cover(artist, album):
-    """Get album cover URL (no download, just return URL)"""
+    """Get album cover: check cache → fetch from API → download locally. Returns relative URL or None"""
+    safe_artist = artist.replace("/", "_").replace("\\", "_").replace(":", "_")[:50]
+    safe_album = album.replace("/", "_").replace("\\", "_").replace(":", "_")[:50]
+    filename = f"{safe_artist}_{safe_album}.jpg"
+    filepath = os.path.join(COVERS_DIR, filename)
+    
+    # Check if already cached
+    if os.path.exists(filepath):
+        return f"/album_covers/{filename}"
+    
+    # Fetch from MusicBrainz/Cover Art Archive
     mbid = search_album(artist, album)
     if not mbid:
         return None
-    return get_cover_url(mbid)
+    
+    cover_url = get_cover_url(mbid)
+    if not cover_url:
+        return None
+    
+    # Download and save
+    downloaded_filename = download_cover(cover_url, artist, album)
+    if downloaded_filename:
+        return f"/album_covers/{downloaded_filename}"
+    
+    return None
