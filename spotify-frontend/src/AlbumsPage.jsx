@@ -3,6 +3,7 @@ import { useDebounce } from './useDebounce';
 import SearchBar from './SearchBar';
 import Table from './Table';
 import BarChartComponent from './BarChart';
+import GridView from './GridView';
 import { formatMs, msToHours } from './utils';
 
 export default function AlbumsPage() {
@@ -23,12 +24,12 @@ export default function AlbumsPage() {
 
   useEffect(() => {
     fetchAlbums();
-  }, [debouncedFilters, metric, aggregate]);
+  }, [debouncedFilters, metric, aggregate, viewType]);
 
   const fetchAlbums = async () => {
     setLoading(true);
     const params = new URLSearchParams();
-    params.append('limit', filters.limit);
+    params.append('limit', viewType === 'grid' ? 9 : filters.limit);
     params.append('sort_by', metric);
     params.append('aggregate', aggregate);
     if (filters.artist) params.append('artist', filters.artist);
@@ -38,12 +39,19 @@ export default function AlbumsPage() {
     if (filters.end_date) params.append('end_date', filters.end_date);
 
     const API_URL = process.env.REACT_APP_API_URL;
+    const endpoint = viewType === 'grid' ? '/api/albums/grid' : '/api/albums';
 
-    const response = await fetch(`${API_URL}/api/albums?${params}`);
+    const response = await fetch(`${API_URL}${endpoint}?${params}`);
     const data = await response.json();
     setAlbums(data);
     setLoading(false);
   };
+
+  const displayAlbums = albums.map(a => ({
+    ...a,
+    display_name: a.is_aggregated ? `${a.name} (+ versions)` : a.name,
+    display_value: metric === 'time' ? formatMs(a.total_ms) : a.stream_count
+  }));
 
   return (
     <div>
@@ -68,6 +76,12 @@ export default function AlbumsPage() {
           >
             Chart
           </button>
+          <button 
+            onClick={() => setViewType('grid')}
+            className={`px-4 py-2 rounded ${viewType === 'grid' ? 'bg-green-500 text-white' : 'bg-gray-700 text-gray-200'}`}
+          >
+            Grid
+          </button>
         </div>
 
         <div className="flex items-center gap-4">
@@ -81,17 +95,19 @@ export default function AlbumsPage() {
             <span>Combine Album Versions</span>
           </label>
 
-          <div className="flex items-center gap-2">
-            <label className="text-white font-semibold">Sort by:</label>
-            <select 
-              value={metric}
-              onChange={(e) => setMetric(e.target.value)}
-              className="px-4 py-2 bg-gray-700 text-white rounded focus:outline-none focus:ring-2 focus:ring-green-500"
-            >
-              <option value="streams">Streams</option>
-              <option value="time">Time</option>
-            </select>
-          </div>
+          {viewType !== 'grid' && (
+            <div className="flex items-center gap-2">
+              <label className="text-white font-semibold">Sort by:</label>
+              <select 
+                value={metric}
+                onChange={(e) => setMetric(e.target.value)}
+                className="px-4 py-2 bg-gray-700 text-white rounded focus:outline-none focus:ring-2 focus:ring-green-500"
+              >
+                <option value="streams">Streams</option>
+                <option value="time">Time</option>
+              </select>
+            </div>
+          )}
         </div>
       </div>
 
@@ -99,19 +115,21 @@ export default function AlbumsPage() {
 
       {viewType === 'table' ? (
         <Table 
-          data={albums.map(a => ({
-            ...a,
-            display_name: a.is_aggregated ? `${a.name} (All Versions)` : a.name,
-            display_value: metric === 'time' ? formatMs(a.total_ms) : a.stream_count
-          }))} 
+          data={displayAlbums}
           columns={['artist', 'display_name', 'display_value']}
           columnLabels={['Artist', 'Album', metric === 'time' ? 'Total Time' : 'Streams']}
         />
-      ) : (
+      ) : viewType === 'chart' ? (
         <BarChartComponent 
-          data={metric === 'time' ? albums.map(a => ({...a, display_value: msToHours(a.total_ms)})) : albums} 
+          data={metric === 'time' ? displayAlbums.map(a => ({...a, display_value: msToHours(a.total_ms)})) : displayAlbums} 
           dataKey={metric === 'time' ? 'display_value' : 'stream_count'}
-          nameKey={a => a.is_aggregated ? `${a.name} (All Versions)` : a.name}
+          nameKey="display_name"
+        />
+      ) : (
+        <GridView 
+          data={albums}
+          imageKey="cover_url"
+          labelKey="name"
         />
       )}
     </div>
