@@ -16,8 +16,13 @@ HEADERS = {
 
 def search_album(artist, album):
     """Search MusicBrainz release group for album"""
-    query = f'artist:"{artist}" AND releasegroup:"{album}"'
-    params = {"query": query, "fmt": "json", "limit": 1}
+    query = f'artist:"{artist}" AND release:"{album}"'
+    params = {
+        "query": query,
+        "fmt": "json",
+        "limit": 5,
+        "dismax": "true"
+    }
     try:
         response = requests.get(f"{MUSICBRAINZ_BASE}/release-group", params=params, headers=HEADERS, timeout=5)
         response.raise_for_status()

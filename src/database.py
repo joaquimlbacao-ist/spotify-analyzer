@@ -21,7 +21,7 @@ def init_db():
             track_name TEXT NOT NULL,
             album TEXT NOT NULL,
             ms_played INTEGER NOT NULL,
-            timestamp TIMESTAMP NOT NULL
+            timestamp TIMESTAMP NOT NULL UNIQUE
         )
     ''')
     
@@ -99,6 +99,15 @@ def get_stream_count():
     count = cursor.fetchone()[0]
     conn.close()
     return count
+
+def get_stream_date_range():
+    """Get min and max timestamp"""
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+    cursor.execute('SELECT MIN(timestamp), MAX(timestamp) FROM streams')
+    result = cursor.fetchone()
+    conn.close()
+    return result  # Returns (min_ts, max_ts) or (None, None)
 
 # ===== ALBUM GROUPINGS =====
 

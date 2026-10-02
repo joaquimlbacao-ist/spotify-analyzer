@@ -7,6 +7,7 @@ import os
 import sys
 from src.database import clear_streams, insert_streams_bulk
 from src.music_service import get_album_cover
+from src.database import get_stream_count
 
 
 def get_frontend_path():
@@ -32,6 +33,16 @@ app = Flask(
 CORS(app)
 
 analyzer = None
+
+def init_analyzer():
+    """Initialize analyzer from database"""
+    global analyzer
+    from src.database import get_stream_count
+    if get_stream_count() > 0:
+        analyzer = StreamAnalyzer()
+
+# Initialize on startup
+init_analyzer()
 
 def process_json_files(file_objects):
     """Parse JSON files and return stream list"""
@@ -92,7 +103,7 @@ def get_albums():
 
 @app.route('/api/upload', methods=['POST'])
 def upload_files():
-    """Upload and process Spotify JSON files"""
+    """Upload and process Spotify JSON files (append mode with duplicate detection)"""
     global analyzer
     
     try:
@@ -108,16 +119,66 @@ def upload_files():
         loader = StreamLoader()
         filtered_streams = loader.filter_streams(streams_data)
         
-        clear_streams()
-        streams_to_insert = [
-            (s.artist, s.track_name, s.album, s.ms_played, s.ts)
-            for s in filtered_streams
-        ]
-        insert_streams_bulk(streams_to_insert)
+        # Get existing timestamps to detect duplicates
+        from src.database import get_all_streams as db_get_all_streams
+        existing_db = db_get_all_streams()
+        existing_timestamps = {row[4] for row in existing_db}  # row[4] is timestamp
         
+        # Filter out duplicates
+        new_streams = [s for s in filtered_streams if str(s.ts) not in existing_timestamps]
+        duplicates = len(filtered_streams) - len(new_streams)
+        
+        # Insert only new streams
+        if new_streams:
+            streams_to_insert = [
+                (s.artist, s.track_name, s.album, s.ms_played, s.ts)
+                for s in new_streams
+            ]
+            insert_streams_bulk(streams_to_insert)
+        
+        # Reload analyzer
         analyzer = StreamAnalyzer()
         
-        return jsonify({'count': len(filtered_streams), 'status': 'success'})
+        from src.database import get_stream_count
+        total = get_stream_count()
+        
+        return jsonify({
+            'added': len(new_streams),
+            'duplicates': duplicates,
+            'total': total,
+            'status': 'success'
+        })
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/has-data', methods=['GET'])
+def has_data():
+    """Check if database has any streams"""
+    from src.database import get_stream_count
+    count = get_stream_count()
+    return jsonify({'has_streams': count > 0, 'count': count})
+
+@app.route('/api/stream-info', methods=['GET'])
+def stream_info():
+    """Get stream count and date range"""
+    from src.database import get_stream_count, get_stream_date_range
+    count = get_stream_count()
+    min_ts, max_ts = get_stream_date_range()
+    return jsonify({
+        'count': count,
+        'min_date': min_ts,
+        'max_date': max_ts
+    })
+
+@app.route('/api/streams', methods=['DELETE'])
+def delete_streams():
+    """Delete all streams from database"""
+    global analyzer
+    try:
+        from src.database import clear_streams
+        clear_streams()
+        analyzer = StreamAnalyzer()
+        return jsonify({'status': 'success', 'message': 'All streams deleted'})
     except Exception as e:
         return jsonify({'error': str(e)}), 500
     
@@ -150,6 +211,7 @@ def upload_files():
 def get_albums_grid():
     """GET /api/albums/grid?limit=9 - top albums with cached cover URLs"""
     limit = int(request.args.get('limit', 9))
+    artist = request.args.get('artist')
     year = request.args.get('year', type=int)
     month = request.args.get('month', type=int)
     start_date = request.args.get('start_date')
@@ -158,7 +220,7 @@ def get_albums_grid():
     aggregate = request.args.get('aggregate', 'false').lower() == 'true'
     
     try:
-        results = analyzer.top_albums(limit=limit, year=year, month=month, start_date=start_date, end_date=end_date, sort_by=sort_by, aggregate=aggregate)
+        results = analyzer.top_albums(limit=limit, artist=artist, year=year, month=month, start_date=start_date, end_date=end_date, sort_by=sort_by, aggregate=aggregate)
         
         albums_with_covers = []
         for album in results:
