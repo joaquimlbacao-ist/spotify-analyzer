@@ -21,7 +21,8 @@ def init_db():
             track_name TEXT NOT NULL,
             album TEXT NOT NULL,
             ms_played INTEGER NOT NULL,
-            timestamp TIMESTAMP NOT NULL UNIQUE
+            timestamp TIMESTAMP NOT NULL,
+            UNIQUE(timestamp, artist, track_name, ms_played)
         )
     ''')
     
@@ -68,15 +69,19 @@ def insert_stream(artist, track_name, album, ms_played, timestamp):
     conn.close()
 
 def insert_streams_bulk(streams_list):
-    """Bulk insert streams. streams_list: list of (artist, track_name, album, ms_played, timestamp)"""
+    """Bulk insert streams, skipping rows that already exist.
+    streams_list: list of (artist, track_name, album, ms_played, timestamp)
+    Returns the number of rows actually inserted."""
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
     cursor.executemany('''
-        INSERT INTO streams (artist, track_name, album, ms_played, timestamp)
+        INSERT OR IGNORE INTO streams (artist, track_name, album, ms_played, timestamp)
         VALUES (?, ?, ?, ?, ?)
     ''', streams_list)
+    inserted = cursor.rowcount
     conn.commit()
     conn.close()
+    return inserted
 
 def get_all_streams():
     """Fetch all streams from DB"""

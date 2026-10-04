@@ -119,22 +119,13 @@ def upload_files():
         loader = StreamLoader()
         filtered_streams = loader.filter_streams(streams_data)
         
-        # Get existing timestamps to detect duplicates
-        from src.database import get_all_streams as db_get_all_streams
-        existing_db = db_get_all_streams()
-        existing_timestamps = {row[4] for row in existing_db}  # row[4] is timestamp
-        
-        # Filter out duplicates
-        new_streams = [s for s in filtered_streams if str(s.ts) not in existing_timestamps]
-        duplicates = len(filtered_streams) - len(new_streams)
-        
-        # Insert only new streams
-        if new_streams:
-            streams_to_insert = [
-                (s.artist, s.track_name, s.album, s.ms_played, s.ts)
-                for s in new_streams
-            ]
-            insert_streams_bulk(streams_to_insert)
+        # Insert; the database skips rows that already exist
+        streams_to_insert = [
+            (s.artist, s.track_name, s.album, s.ms_played, s.ts)
+            for s in filtered_streams
+        ]
+        added = insert_streams_bulk(streams_to_insert)
+        duplicates = len(filtered_streams) - added
         
         # Reload analyzer
         analyzer = StreamAnalyzer()
@@ -143,7 +134,7 @@ def upload_files():
         total = get_stream_count()
         
         return jsonify({
-            'added': len(new_streams),
+            'added': added,
             'duplicates': duplicates,
             'total': total,
             'status': 'success'
