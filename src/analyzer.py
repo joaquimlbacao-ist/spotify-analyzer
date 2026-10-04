@@ -1,6 +1,6 @@
 from collections import defaultdict
 from src.models import Stream, ArtistStats, TrackStats, AlbumStats
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 import re
 from src.database import get_all_streams
 
@@ -187,8 +187,8 @@ class StreamAnalyzer:
                     filtered = [s for s in filtered if s.ts >= start]
                 
                 if end_date:
-                    end = datetime.strptime(end_date, "%d-%m-%Y").replace(tzinfo=timezone.utc)
-                    filtered = [s for s in filtered if s.ts <= end]
+                    end = datetime.strptime(end_date, "%d-%m-%Y").replace(tzinfo=timezone.utc) + timedelta(days=1)
+                    filtered = [s for s in filtered if s.ts < end]
             except ValueError:
                 pass
         
@@ -361,7 +361,77 @@ class StreamAnalyzer:
             for artist_album in sorted_albums
         ]
         return results
-    
+
+    def artist_timeline(self, top=5, start_date=None, end_date=None, metric='streams', bucket='month'):
+        """
+        Listening per artist per bucket (month or year), for the top N artists in the range.
+
+        Returns {"buckets": ["2020", ...] or ["2020-01", ...],
+                "series": [{"artist": str, "values": [int | None, ...]}, ...]}
+        Values are None before an artist's first listen, then 0 or more.
+        """
+        streams = self._filter_streams(self.all_streams, start_date=start_date, end_date=end_date)
+        if not streams:
+            return {"buckets": [], "series": []}
+
+        def weight(s):
+            return s.ms_played if metric == 'time' else 1
+
+        def index_of(s):
+            if bucket == 'year':
+                return s.ts.year
+            return s.ts.year * 12 + s.ts.month - 1
+
+        def label_of(i):
+            if bucket == 'year':
+                return str(i)
+            return f"{i // 12:04d}-{i % 12 + 1:02d}"
+
+        indexed = [(s, index_of(s)) for s in streams]
+
+        # Top N artists within the range
+        totals = defaultdict(int)
+        for s, _ in indexed:
+            totals[s.artist] += weight(s)
+        top_artists = sorted(totals, key=totals.get, reverse=True)[:top]
+        top_set = set(top_artists)
+
+        # Per (artist, bucket) totals, plus each artist's first bucket
+        counts = defaultdict(int)
+        first_idx = {}
+        for s, i in indexed:
+            if s.artist not in top_set:
+                continue
+            counts[(s.artist, i)] += weight(s)
+            if s.artist not in first_idx or i < first_idx[s.artist]:
+                first_idx[s.artist] = i
+
+        # Shared x-axis: every bucket from the first to the last stream in range
+        buckets = range(min(i for _, i in indexed), max(i for _, i in indexed) + 1)
+
+        series = [
+            {
+                "artist": artist,
+                "values": [
+                    None if i < first_idx[artist] else counts.get((artist, i), 0)
+                    for i in buckets
+                ],
+            }
+            for artist in top_artists
+        ]
+
+        return {"buckets": [label_of(i) for i in buckets], "series": series}
+
+    @staticmethod
+    def _month_range(first, last):
+        """All (year, month) pairs from first to last, inclusive."""
+        y, m = first
+        out = []
+        while (y, m) <= last:
+            out.append((y, m))
+            y, m = (y + 1, 1) if m == 12 else (y, m + 1)
+        return out
+
     def get_all_artists(self) -> list[str]:
         """Return sorted list of all unique artists."""
         return sorted(self.by_artist.keys())

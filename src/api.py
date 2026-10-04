@@ -244,6 +244,17 @@ def serve_album_cover(filename):
     covers_dir = os.path.join(os.path.dirname(__file__), '../album_covers')
     return send_from_directory(covers_dir, filename)
 
+@app.route("/api/artists/timeline")
+def artists_timeline():
+    top = request.args.get("top", 5, type=int)
+    start = request.args.get("start_date")
+    end = request.args.get("end_date")
+    metric = request.args.get("metric", "streams")
+    bucket = request.args.get("bucket", "month")
+    if bucket not in ("month", "year"):
+        bucket = "month"
+    return jsonify(analyzer.artist_timeline(top, start, end, metric, bucket))
+
 @app.route('/', defaults={'path': ''})
 @app.route('/<path:path>')
 def serve_react(path):
