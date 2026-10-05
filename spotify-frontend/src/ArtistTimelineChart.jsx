@@ -55,7 +55,7 @@ const CustomTooltip = ({ active, payload, label, metric }) => {
   );
 };
 
-export default function ArtistTimelineChart({ timeline, metric }) {
+export default function ArtistTimelineChart({ timeline, metric, colors }) {
   const rows = useMemo(
     () => (timeline ? toRows(timeline, metric) : []),
     [timeline, metric]
@@ -64,6 +64,8 @@ export default function ArtistTimelineChart({ timeline, metric }) {
   if (!timeline || timeline.series.length === 0) {
     return <p className="text-white">No data to display</p>;
   }
+
+  const colorOf = (artist) => colors?.[artist] ?? colorFor(artist);
 
   return (
     <ResponsiveContainer width="100%" height={500}>
@@ -83,7 +85,7 @@ export default function ArtistTimelineChart({ timeline, metric }) {
             type="monotone"
             dataKey={`s${idx}`}
             name={s.artist}
-            stroke={colorFor(s.artist)}
+            stroke={colorOf(s.artist)}
             strokeWidth={2}
             dot={false}
             connectNulls={false}

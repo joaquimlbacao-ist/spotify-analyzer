@@ -362,7 +362,7 @@ class StreamAnalyzer:
         ]
         return results
 
-    def artist_timeline(self, top=5, start_date=None, end_date=None, metric='streams', bucket='month'):
+    def artist_timeline(self, top=5, start_date=None, end_date=None, metric='streams', bucket='month', artists=None):
         """
         Listening per artist per bucket (month or year), for the top N artists in the range.
 
@@ -389,11 +389,17 @@ class StreamAnalyzer:
 
         indexed = [(s, index_of(s)) for s in streams]
 
-        # Top N artists within the range
         totals = defaultdict(int)
         for s, _ in indexed:
             totals[s.artist] += weight(s)
-        top_artists = sorted(totals, key=totals.get, reverse=True)[:top]
+
+        if artists:
+            # Compare mode: exactly the requested artists, in the order given
+            by_lower = {name.lower(): name for name in totals}
+            top_artists = [by_lower.get(a.lower(), a) for a in artists]
+        else:
+            # Top mode: top N artists within the range
+            top_artists = sorted(totals, key=totals.get, reverse=True)[:top]
         top_set = set(top_artists)
 
         # Per (artist, bucket) totals, plus each artist's first bucket
@@ -413,7 +419,8 @@ class StreamAnalyzer:
             {
                 "artist": artist,
                 "values": [
-                    None if i < first_idx[artist] else counts.get((artist, i), 0)
+                    None if artist not in first_idx or i < first_idx[artist]
+                    else counts.get((artist, i), 0)
                     for i in buckets
                 ],
             }
@@ -435,6 +442,10 @@ class StreamAnalyzer:
     def get_all_artists(self) -> list[str]:
         """Return sorted list of all unique artists."""
         return sorted(self.by_artist.keys())
+    
+    def get_artists_by_popularity(self) -> list[str]:
+        """All artists, most played first."""
+        return sorted(self.by_artist, key=lambda a: len(self.by_artist[a]), reverse=True)
     
     def get_years(self) -> list[int]:
         """Return sorted list of all years with streams."""

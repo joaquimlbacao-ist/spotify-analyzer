@@ -23,7 +23,7 @@ export function isRangeValid(r) {
   return start <= end;
 }
 
-export default function TimelineControls({ value, onChange, minYear, maxYear }) {
+export default function TimelineControls({ value, onChange, minYear, maxYear, showTop = true }) {
   const years = [];
   for (let y = minYear; y <= maxYear; y++) years.push(y);
 
@@ -85,18 +85,20 @@ export default function TimelineControls({ value, onChange, minYear, maxYear }) 
           {yearSelect('endYear')}
         </div>
 
-        <div className="flex items-center gap-2">
-          <label className="text-white font-semibold">Artists:</label>
-          <select
-            value={value.top}
-            onChange={(e) => set({ top: Number(e.target.value) })}
-            className={selectClass}
-          >
-            {ARTIST_OPTIONS.map((n) => (
-              <option key={n} value={n}>{n}</option>
-            ))}
-          </select>
-        </div>
+        {showTop && (
+          <div className="flex items-center gap-2">
+            <label className="text-white font-semibold">Artists:</label>
+            <select
+              value={value.top}
+              onChange={(e) => set({ top: Number(e.target.value) })}
+              className={selectClass}
+            >
+              {ARTIST_OPTIONS.map((n) => (
+                <option key={n} value={n}>{n}</option>
+              ))}
+            </select>
+          </div>
+        )}
       </div>
 
       {!isRangeValid(value) && (

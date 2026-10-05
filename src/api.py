@@ -244,7 +244,12 @@ def artists_timeline():
     bucket = request.args.get("bucket", "month")
     if bucket not in ("month", "year"):
         bucket = "month"
-    return jsonify(analyzer.artist_timeline(top, start, end, metric, bucket))
+    artists = request.args.getlist("artist")
+    return jsonify(analyzer.artist_timeline(top, start, end, metric, bucket, artists=artists or None))
+
+@app.route("/api/artists/names")
+def artist_names():
+    return jsonify(analyzer.get_artists_by_popularity())
 
 @app.route('/', defaults={'path': ''})
 @app.route('/<path:path>')

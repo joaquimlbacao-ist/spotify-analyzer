@@ -6,6 +6,7 @@ import BarChartComponent from './BarChart';
 import { formatMs, msToHours } from './utils';
 import ArtistTimelineChart from './ArtistTimelineChart';
 import TimelineControls, { rangeToDates, isRangeValid } from './TimelineControls';
+import ArtistPicker from './ArtistPicker';
 
 export default function ArtistsPage() {
   const [artists, setArtists] = useState([]);
@@ -23,6 +24,9 @@ export default function ArtistsPage() {
   const [timeline, setTimeline] = useState(null);
   const [yearBounds, setYearBounds] = useState(null);
   const [timelineRange, setTimelineRange] = useState(null);
+  const [timelineSource, setTimelineSource] = useState('top'); // 'top' | 'compare'
+  const [selectedArtists, setSelectedArtists] = useState([]); // [{ name, color }]
+  const [artistNames, setArtistNames] = useState([]);
 
   useEffect(() => {
     fetchArtists();
@@ -46,28 +50,32 @@ export default function ArtistsPage() {
   };
 
   useEffect(() => {
-      if (viewType === 'timeline' && timelineRange && isRangeValid(timelineRange)) {
-        fetchTimeline();
+    if (viewType !== 'timeline' || !timelineRange || !isRangeValid(timelineRange)) return;
+    if (timelineSource === 'compare' && selectedArtists.length === 0) return;
+    fetchTimeline();
+  }, [timelineRange, metric, viewType, timelineSource, selectedArtists]);
+
+    const fetchTimeline = async () => {
+      setLoading(true);
+      const { start_date, end_date } = rangeToDates(timelineRange);
+      const params = new URLSearchParams({
+        metric,
+        start_date,
+        end_date,
+        bucket: timelineRange.mode === 'year' ? 'year' : 'month',
+      });
+      if (timelineSource === 'compare') {
+        selectedArtists.forEach((a) => params.append('artist', a.name));
+      } else {
+        params.append('top', timelineRange.top);
       }
-    }, [timelineRange, metric, viewType]);
 
-  const fetchTimeline = async () => {
-    setLoading(true);
-    const { start_date, end_date } = rangeToDates(timelineRange);
-    const params = new URLSearchParams({
-      top: timelineRange.top,
-      metric,
-      start_date,
-      end_date,
-      bucket: timelineRange.mode === 'year' ? 'year' : 'month',
-    });
-
-    const API_URL = process.env.REACT_APP_API_URL;
-    const response = await fetch(`${API_URL}/api/artists/timeline?${params}`);
-    const data = await response.json();
-    setTimeline(data);
-    setLoading(false);
-  };
+      const API_URL = process.env.REACT_APP_API_URL;
+      const response = await fetch(`${API_URL}/api/artists/timeline?${params}`);
+      const data = await response.json();
+      setTimeline(data);
+      setLoading(false);
+    };
 
   useEffect(() => {
     const loadBounds = async () => {
@@ -92,6 +100,21 @@ export default function ArtistsPage() {
     loadBounds();
   }, []);
 
+  useEffect(() => {
+    const loadNames = async () => {
+      const API_URL = process.env.REACT_APP_API_URL;
+      const res = await fetch(`${API_URL}/api/artists/names`);
+      setArtistNames(await res.json());
+    };
+    loadNames();
+  }, []);
+
+  const colorMap = Object.fromEntries(selectedArtists.map((a) => [a.name, a.color]));
+  const noPlays = new Set(
+    (timeline?.series || [])
+      .filter((s) => s.values.every((v) => v === null))
+      .map((s) => s.artist)
+  );
   return (
     <div>
       <h1 className="text-3xl font-bold text-white mb-6">Top Artists</h1>
@@ -136,12 +159,38 @@ export default function ArtistsPage() {
       </div>
 
       {viewType === 'timeline' && timelineRange && yearBounds && (
-        <TimelineControls
-          value={timelineRange}
-          onChange={setTimelineRange}
-          minYear={yearBounds.min}
-          maxYear={yearBounds.max}
-        />
+        <>
+          <div className="flex gap-2 mb-4">
+            {[['top', 'Top artists'], ['compare', 'Compare artists']].map(([value, label]) => (
+              <button
+                key={value}
+                onClick={() => setTimelineSource(value)}
+                className={`px-4 py-2 rounded ${
+                  timelineSource === value ? 'bg-green-500 text-white' : 'bg-gray-700 text-gray-200'
+                }`}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+
+          <TimelineControls
+            value={timelineRange}
+            onChange={setTimelineRange}
+            minYear={yearBounds.min}
+            maxYear={yearBounds.max}
+            showTop={timelineSource === 'top'}
+          />
+
+          {timelineSource === 'compare' && (
+            <ArtistPicker
+              names={artistNames}
+              selected={selectedArtists}
+              onChange={setSelectedArtists}
+              noPlays={noPlays}
+            />
+          )}
+        </>
       )}
 
       {loading && <p className="text-white">Loading...</p>}
@@ -161,8 +210,14 @@ export default function ArtistsPage() {
           dataKey={metric === 'time' ? 'display_value' : 'stream_count'}
           nameKey="name" 
         />
+      ) : timelineSource === 'compare' && selectedArtists.length === 0 ? (
+        <p className="text-white">Search and add artists to compare.</p>
       ) : (
-        <ArtistTimelineChart timeline={timeline} metric={metric} />
+        <ArtistTimelineChart
+          timeline={timeline}
+          metric={metric}
+          colors={timelineSource === 'compare' ? colorMap : undefined}
+        />
       )}
     </div>
   );
